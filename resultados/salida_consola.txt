@@ -1,0 +1,118 @@
+
+======================================================================
+ 2. Verificaciones numéricas
+======================================================================
+Integral de f(x) con xm = 1, alfa = 3     : 1.000000
+Integral de f(x) con xm = 1, alfa = 1.5   : 1.000000
+Integral de f(x) con xm = 1, alfa = 0.984 : 1.000000
+
+alfa = 3: E[X]  fórmula = 1.500000 | integral = 1.500000
+alfa = 3: Var(X) fórmula = 0.750000 | E[X^2]-E[X]^2 = 0.750000
+
+(Paquete 'actuar' no instalado: se omite la validación cruzada)
+
+======================================================================
+ 5. Media y varianza: teoría vs. simulación (xm = 1, n = 100 000)
+======================================================================
+  alfa media_teorica media_muestral varianza_teorica varianza_muestral
+ 3.000           1.5         1.5036             0.75        7.2098e-01
+ 1.500           3.0         2.9818              Inf        4.0065e+02
+ 0.984           Inf        14.5974              Inf        3.5774e+05
+ mediana_teorica mediana_muestral
+          1.2599           1.2623
+          1.5874           1.5907
+          2.0227           2.0144
+
+======================================================================
+ 6. F.G.M. y función característica
+======================================================================
+Integral de e^(t x) f(x) entre 1 y L, con t = 0.5 y alfa = 3:
+   L =   10  ->  2.3756e+00
+   L =   50  ->  8.3156e+04
+   L =  100  ->  3.3881e+14
+   L =  200  ->  1.0505e+35
+   L =  400  ->  1.7283e+77
+   => crece sin límite: M_X(t) no existe para t > 0.
+
+t =  -0.1 | fórmula con Γ = 0.863208 | integral directa = 0.863208 | Monte Carlo = 0.862936
+t =  -0.5 | fórmula con Γ = 0.495728 | integral directa = 0.495728 | Monte Carlo = 0.495199
+t =  -1.0 | fórmula con Γ = 0.258187 | integral directa = 0.258187 | Monte Carlo = 0.257727
+t =  -2.0 | fórmula con Γ = 0.075069 | integral directa = 0.075069 | Monte Carlo = 0.074862
+
+φ(t) calculada y comparada con la versión empírica (figura 05).
+
+======================================================================
+ 7. Aplicación: ballenas de Bitcoin, X ~ Pareto(xm = 50 BTC, alfa = 0.984)
+======================================================================
+Probabilidad de que una ballena tenga más de x BTC:
+ saldo_BTC P_mayor_teorica P_mayor_simulada
+     1e+02       0.5055760          0.50546
+     1e+03       0.0524550          0.05275
+     1e+04       0.0054424          0.00525
+     1e+05       0.0005647          0.00065
+
+Mediana teórica  = 101.13 BTC | mediana simulada = 101.12 BTC
+Cuantil 99% teórico = 5389 BTC | cuantil 99.9% = 55944 BTC
+E[X] = Inf (alfa <= 1) y Var(X) = Inf (alfa <= 2)
+Fórmula de Gini 1/(2 alfa - 1) = 1.0331 > 1  -> no aplica (requiere alfa > 1)
+
+Cinco réplicas de 100 000 ballenas:
+ replica     media mediana     maximo
+       1   616.255 101.141  2,248,767
+       2 1,234.881 101.543 59,428,091
+       3   834.173 100.984  9,134,367
+       4   591.527 101.027  2,449,866
+       5   597.590 100.400  3,308,707
+
+Indicadores de desigualdad (200 réplicas de 100 000 ballenas):
+                                      indicador mediana     p05      p95
+                                           Gini  0.8621 0.82274   0.9553
+                  Participación del 1% más rico  0.6770 0.58160   0.8934
+               Participación del 6.28% más rico  0.8082 0.75326   0.9377
+                 Participación del 20% más rico  0.8894 0.85787   0.9643
+ Índice tipo Nakamoto (direcciones para el 50%) 94.5000 1.00000 410.2500
+                  Peso de la dirección más rica  0.1180 0.03351   0.5702
+
+Gini mediano = 0.8621 (artículo, todas las direcciones: 0.985)
+El 6.28% más rico de las ballenas tiene, en mediana, el 80.82% de sus BTC
+En mediana bastan 94 de 100000 direcciones (0.095%) para reunir el 50%
+
+Gini muestral mediano (30 réplicas) según el tamaño de muestra:
+       n   gini
+     100 0.6733
+   1,000 0.7681
+  10,000 0.8288
+ 100,000 0.8587
+
+======================================================================
+ 8. Estimación de alfa con los datos simulados
+======================================================================
+Máxima verosimilitud: alfa = 0.9844  (IC 95%: 0.9783 – 0.9905)
+Mínima distancia KS:  alfa = 0.986  (D = 0.0018)
+Valor verdadero usado en la simulación: alfa = 0.984
+Prueba KS formal con el alfa verdadero:
+
+	Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  saldos
+D = 0.0022103, p-value = 0.713
+alternative hypothesis: two-sided
+
+
+======================================================================
+ 9. Resumen de la aplicación
+======================================================================
+                                   indicador                valor
+                                    xm (BTC)                   50
+                           alfa del artículo                0.984
+               alfa por máxima verosimilitud               0.9844
+                          alfa por mínima KS                0.986
+                       Mediana teórica (BTC)               101.13
+                               Media teórica Infinita (alfa <= 1)
+                            Varianza teórica Infinita (alfa <= 2)
+         Gini muestral mediano (n = 100 000)               0.8621
+   Gini del artículo (todas las direcciones)                0.985
+    Participación mediana del 6.28% más rico               80.82%
+ Direcciones que concentran el 50% (mediana)          94 (0.095%)
+
+Figuras guardadas en ./figuras y tablas en ./resultados
