@@ -100,19 +100,63 @@ alternative hypothesis: two-sided
 
 
 ======================================================================
- 9. Resumen de la aplicación
+ 9. Oferta finita: Pareto truncada en 21 millones de BTC
 ======================================================================
-                                   indicador                valor
-                                    xm (BTC)                   50
-                           alfa del artículo                0.984
-               alfa por máxima verosimilitud               0.9844
-                          alfa por mínima KS                0.986
-                       Mediana teórica (BTC)               101.13
-                               Media teórica Infinita (alfa <= 1)
-                            Varianza teórica Infinita (alfa <= 2)
-         Gini muestral mediano (n = 100 000)               0.8621
-   Gini del artículo (todas las direcciones)                0.985
-    Participación mediana del 6.28% más rico               80.82%
- Direcciones que concentran el 50% (mediana)          94 (0.095%)
+Media de la Pareto truncada en 21 millones = 708 BTC
+Mediana = 101.1 BTC -> la media es 7.0 veces la mediana
+Interpretación: con oferta finita la media existe, pero está dominada por
+ las ballenas más grandes y no representa a la dirección típica.
+
+======================================================================
+ 10. Datos reales de BitInfoCharts (noviembre 2026)
+======================================================================
+ rango_min_btc rango_max_btc direcciones btc_total
+            10           100      130453   4228970
+           100          1000       18279   5240936
+          1000         10000        1939   4199837
+         10000        100000          84   2294926
+
+Direcciones con saldo >= x:
+    10    100   1000  10000 
+150755  20302   2023     84 
+alfa entre décadas (10->100, 100->1000, 1000->10000):
+   10   100  1000 
+0.871 1.002 1.382 
+
+alfa por MV agrupada (cola desde 10 BTC)  = 0.885
+alfa por MV agrupada (cola desde 100 BTC) = 1.017
+Kondor et al. (2014), datos de 2013: alfa = 0.984
+Conclusión: 13 años después la cola sigue siendo Pareto con alfa cercano a 1.
+ En la punta (>= 10 000 BTC) hay menos direcciones de las que predice la recta:
+ oferta finita y casas de cambio que agrupan los BTC de miles de usuarios.
+
+======================================================================
+ 11. Efecto Mateo vs. Ley de Gibrat
+======================================================================
+Direcciones simuladas: 30130 | ballenas (>= 50 BTC): 508
+alfa teórico = 1/(1-p) = 1.031 | alfa estimado por MV en la cola = 1.029
+Gini de todas las direcciones simuladas = 0.952
+En log-log el efecto Mateo da una RECTA (ley de potencias) y Gibrat una curva
+ que cae cada vez más rápido: por eso la cola de Bitcoin es Pareto.
+
+======================================================================
+ 12. Resumen de la aplicación
+======================================================================
+                                                indicador                valor
+                                                 xm (BTC)                   50
+                                        alfa del artículo                0.984
+                            alfa por máxima verosimilitud               0.9844
+                                       alfa por mínima KS                0.986
+                                    Mediana teórica (BTC)               101.13
+                                            Media teórica Infinita (alfa <= 1)
+                                         Varianza teórica Infinita (alfa <= 2)
+                      Gini muestral mediano (n = 100 000)               0.8621
+                Gini del artículo (todas las direcciones)                0.985
+                 Participación mediana del 6.28% más rico               80.82%
+              Direcciones que concentran el 50% (mediana)          94 (0.095%)
+         Media de la Pareto truncada en 21 millones (BTC)                  708
+  alfa con datos reales BitInfoCharts 2026 (desde 10 BTC)                0.885
+ alfa con datos reales BitInfoCharts 2026 (desde 100 BTC)                1.017
+                   alfa en la simulación del efecto Mateo                1.029
 
 Figuras guardadas en ./figuras y tablas en ./resultados
