@@ -21,6 +21,7 @@ o desde la terminal: `Rscript pareto_bitcoin.R` (unos 15 segundos).
 - Solo usa **R base** (no hay que instalar nada). Si el paquete `actuar` está instalado, el script lo usa además para validar nuestras funciones (`actuar::dpareto1` es la Pareto tipo I; ojo: `actuar::dpareto` es la tipo II).
 - Semilla fija (`set.seed(2026)`): los resultados son reproducibles.
 - Salidas: gráficos en `figuras/`, tablas en `resultados/` y la salida completa de consola en `resultados/salida_consola.txt`.
+- Datos reales (sección 10): `datos/bitinfocharts_distribucion.csv`, tomados de la tabla "Bitcoin distribution" de https://bitinfocharts.com/top-100-richest-bitcoin-addresses.html (noviembre de 2026). Verificar contra la página antes de exponer: las cifras cambian un poco cada día.
 
 ## 2. Qué hace el script (cumple la sección 6 de la guía)
 
@@ -34,7 +35,10 @@ o desde la terminal: `Rscript pareto_bitcoin.R` (unos 15 segundos).
 | 6 | F.G.M.: divergencia para t > 0, fórmula con Γ(−α, −xm·t) para t < 0; función característica teórica vs. empírica | `05` |
 | 7 | **Aplicación Bitcoin**: X ~ Pareto(xm = 50 BTC, α = 0.984); probabilidades, cuantiles, inestabilidad de la media, Gini, Lorenz, top 6.28 %, índice tipo Nakamoto, gráficos log-log | `06`, `07`, CSV |
 | 8 | **Réplica del método del artículo**: estimar α por máxima verosimilitud y por mínima distancia de Kolmogorov-Smirnov | `08` |
-| 9 | Tabla resumen | CSV |
+| 9 | **Oferta finita**: media de la Pareto truncada en 21 millones de BTC | consola |
+| 10 | **Datos reales** de BitInfoCharts (nov. 2026): α por décadas y por máxima verosimilitud para datos agrupados | `09` |
+| 11 | **Efecto Mateo vs. ley de Gibrat**: simulación del apego preferencial (modelo de Simon) frente a crecimiento proporcional aleatorio | `10` |
+| 12 | Tabla resumen | CSV |
 
 ## 3. Resultados e interpretación
 
@@ -69,6 +73,11 @@ o desde la terminal: `Rscript pareto_bitcoin.R` (unos 15 segundos).
 - **Mínima distancia KS** (la idea de Kondor et al.: probar varios α y quedarse con el que minimiza la distancia de Kolmogorov-Smirnov): **α = 0.986** (figura 08).
 - Ambos recuperan el valor verdadero 0.984, y la prueba KS no rechaza el modelo (p = 0.71). El intervalo de confianza queda entero por debajo de 1: con datos como los del artículo, la conclusión "media infinita" es estadísticamente firme.
 
+### 3.5 Oferta finita, datos reales y efecto Mateo
+- **Pareto truncada:** como solo existirán 21 millones de BTC, la media real no puede ser infinita. Truncando en 21 millones la media es **708 BTC**, unas 7 veces la mediana (101 BTC): existe, pero la dominan las ballenas más grandes.
+- **Datos reales (BitInfoCharts, nov. 2026):** hay 150 755 direcciones con al menos 10 BTC, 20 302 con 100, 2 023 con 1 000 y 84 con 10 000. En una Pareto, cada vez que el saldo se multiplica por 10 ese número se divide por 10^α, así que α por tramos es **0.87, 1.00 y 1.38**. Por máxima verosimilitud para datos agrupados: **α = 0.885** (cola desde 10 BTC) y **α = 1.017** (desde 100 BTC). Trece años después del artículo la cola sigue siendo Pareto con α ≈ 1 (figura 09). En la punta (≥ 10 000 BTC) hay menos direcciones que las que predice la recta: oferta finita y casas de cambio que agrupan los BTC de miles de usuarios en pocas direcciones.
+- **Efecto Mateo vs. Gibrat (figura 10):** se reparte un millón de BTC uno por uno; con probabilidad p = 3 % va a una dirección nueva y si no, a una existente con probabilidad proporcional a su saldo. La teoría predice α = 1/(1 − p) = 1.031 y la simulación da **α = 1.029**, con Gini de 0.952. Un proceso de Gibrat (choques multiplicativos aleatorios sin ventaja para el rico) da una Log-normal: en log-log es una curva, no una recta. Esto conecta el mecanismo que estudia el artículo con la distribución que usamos.
+
 ## 4. Guion sugerido para la exposición (10 minutos con preguntas)
 
 Cada integrante debe poder responder sobre todo el proyecto (la docente pregunta a cualquiera). Reparto sugerido:
@@ -78,7 +87,7 @@ Cada integrante debe poder responder sobre todo el proyecto (la docente pregunta
 | 0:00–2:00 | Integrante 1 | Problema: ¿por qué no una Normal? Ballenas, Gini, Nakamoto, efecto Mateo vs. ley de Gibrat; artículo de Kondor et al. | Informe |
 | 2:00–4:30 | Integrante 2 | La distribución: f(x), F(x), parámetros xm y α, momento de orden k, media (α > 1), varianza (α > 2), F.G.M. inexistente para t > 0 → función característica. Mostrar secciones 1–2 del código. | Fig. 01, 02, 05 |
 | 4:30–7:00 | Integrante 3 | Código en R: transformada inversa, histograma vs. densidad, media acumulada que no converge con α = 0.984. | Fig. 03, 04 |
-| 7:00–8:30 | Integrante 1 o 2 | Aplicación: α = 1.984 − 1, probabilidades, mediana vs. media, Lorenz, 94 direcciones con el 50 %, log-log, estimación por MV y KS. | Fig. 06, 07, 08 |
+| 7:00–8:30 | Integrante 1 o 2 | Aplicación: α = 1.984 − 1, probabilidades, mediana vs. media, Lorenz, 94 direcciones con el 50 %, log-log, estimación por MV y KS. Datos reales 2026 (α ≈ 0.89–1.02) y efecto Mateo. | Fig. 06–10 |
 | 8:30–10:00 | Todos | Conclusión y preguntas. Mencionar el uso de IA en el código. | — |
 
 **Conclusión de una frase:** con α ≈ 0.984 < 1 la riqueza de las ballenas de Bitcoin no tiene media ni varianza finitas; el promedio no describe al "usuario típico" (la mediana sí) y unas pocas direcciones concentran la mitad de los bitcoins, lo que es coherente con un mecanismo de "los ricos se hacen más ricos".
@@ -89,12 +98,15 @@ Cada integrante debe poder responder sobre todo el proyecto (la docente pregunta
 - *¿Por qué la media muestral da un número si la media teórica es infinita?* Toda muestra finita tiene promedio finito, pero no converge: crece y salta al aumentar n (figura 04 y las cinco réplicas).
 - *¿Por qué no existe la F.G.M.?* e^{tx} crece más rápido que cualquier potencia x^{α+1}, así que la integral diverge para t > 0. La función característica sí existe porque |e^{itx}| = 1.
 - *¿Por qué su Gini (0.86) es menor que el del artículo (0.985)?* El del artículo incluye todas las direcciones; nosotros modelamos solo la cola de más de 50 BTC.
+- *Si la media es infinita, ¿cómo hay solo 21 millones de BTC?* El modelo idealiza la cola. Con la Pareto truncada en 21 millones la media es finita (708 BTC) pero 7 veces la mediana.
+- *¿Usaron datos reales?* Sí, como comprobación: con la distribución de BitInfoCharts de noviembre de 2026 se estima α ≈ 0.89–1.02, cercano al 0.984 del artículo. El resto del análisis usa simulación con el α del artículo.
+- *¿Dirección = persona?* No: una persona puede tener muchas direcciones y una casa de cambio guarda en una sola los BTC de miles de usuarios. Es una limitación del artículo y de nuestros datos.
 
 ## 5. Uso de inteligencia artificial
 
 De acuerdo con la guía, se declara que el código en R (`pareto_bitcoin.R`) y este documento se elaboraron con apoyo de un asistente de IA generativa, a partir de la teoría y la aplicación desarrolladas por el equipo en la primera entrega. El equipo revisó, ejecutó y verificó los resultados. Para el informe/presentación, se sugiere citarlo así (APA 7):
 
-> Anthropic. (2026). *Claude* (versión Claude Opus 5.5) [Modelo de lenguaje de gran tamaño]. Consultado el 13 de noviembre de 2026. https://claude.ai/code
+> Anthropic. (2026). *Claude* (versión Claude Opus 5.5) [Modelo de lenguaje de gran tamaño]. Consultado el 13 y el 17 de noviembre de 2026. https://claude.ai/code
 
 Prompt utilizado (adjuntar como evidencia en el anexo junto con capturas legibles de la conversación): *"Necesito que hagas eso"*, adjuntando la guía del proyecto y el informe corregido de la entrega 1.
 
@@ -102,7 +114,8 @@ Prompt utilizado (adjuntar como evidencia en el anexo junto con capturas legible
 
 ```
 pareto_bitcoin.R      Script principal (comentado paso a paso)
-figuras/              8 gráficos PNG para la exposición
+figuras/              10 gráficos PNG para la exposición
+datos/                Distribución real de saldos (BitInfoCharts, nov. 2026)
 resultados/           Tablas CSV y salida completa de consola
 README.md             Este documento
 ```

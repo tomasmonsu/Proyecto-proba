@@ -22,6 +22,7 @@
 #  Solo usa R base (paquetes stats y graphics). Si el paquete 'actuar' está
 #  instalado, se usa además para validar nuestras funciones; si no, se omite.
 #  Las figuras quedan en ./figuras y las tablas en ./resultados
+#  Datos reales (sección 10): ./datos/bitinfocharts_distribucion.csv
 # =============================================================================
 
 set.seed(2026)                       # semilla: resultados reproducibles
@@ -498,21 +499,162 @@ guardar_png("08_estimacion_ks.png", {
 })
 
 # =============================================================================
-# 9. RESUMEN FINAL
+# 9. OFERTA FINITA: PARETO TRUNCADA EN 21 MILLONES DE BTC
+#    En la realidad la media no puede ser infinita porque solo existirán
+#    21 millones de BTC. El modelo de Pareto es una idealización de la cola.
+#    Si truncamos en H = 21e6, la media es finita (para alfa != 1):
+#    E[X | X <= H] = alfa*xm^alfa/(1-alfa) * (H^(1-alfa) - xm^(1-alfa)) / (1 - (xm/H)^alfa)
 # =============================================================================
-linea("9. Resumen de la aplicación")
+linea("9. Oferta finita: Pareto truncada en 21 millones de BTC")
+
+H_btc <- 21e6
+media_truncada <- function(xm, alfa, H) {
+  alfa * xm^alfa / (1 - alfa) * (H^(1 - alfa) - xm^(1 - alfa)) / (1 - (xm / H)^alfa)
+}
+media_trunc <- media_truncada(xm_btc, alfa_btc, H_btc)
+cat(sprintf("Media de la Pareto truncada en 21 millones = %.0f BTC\n", media_trunc))
+cat(sprintf("Mediana = %.1f BTC -> la media es %.1f veces la mediana\n",
+            mediana_pareto(xm_btc, alfa_btc), media_trunc / mediana_pareto(xm_btc, alfa_btc)))
+cat("Interpretación: con oferta finita la media existe, pero está dominada por\n",
+    "las ballenas más grandes y no representa a la dirección típica.\n")
+
+# =============================================================================
+# 10. DATOS REALES: DISTRIBUCIÓN DE SALDOS DE BITINFOCHARTS (noviembre 2026)
+#     Fuente: https://bitinfocharts.com/top-100-richest-bitcoin-addresses.html
+#     (tabla "Bitcoin distribution"). La página agrupa las direcciones por
+#     rangos de saldo: no tenemos el saldo de cada una, solo CUÁNTAS hay en
+#     cada rango -> datos agrupados. Se omite el rango [100 000, 1 000 000):
+#     son muy pocas direcciones, casi todas de casas de cambio.
+# =============================================================================
+linea("10. Datos reales de BitInfoCharts (noviembre 2026)")
+
+reales <- read.csv("datos/bitinfocharts_distribucion.csv")
+print(reales, row.names = FALSE)
+
+# 10.1 Estimación "por décadas": N(x) = nº de direcciones con saldo >= x.
+#      En una Pareto, N(x) / N(10x) = 10^alfa  =>  alfa = log10(N(x) / N(10x))
+N_mayor <- rev(cumsum(rev(reales$direcciones)))
+names(N_mayor) <- reales$rango_min_btc
+alfa_decadas <- log10(head(N_mayor, -1) / tail(N_mayor, -1))
+cat("\nDirecciones con saldo >= x:\n"); print(N_mayor)
+cat("alfa entre décadas (10->100, 100->1000, 1000->10000):\n")
+print(round(alfa_decadas, 3))
+
+# 10.2 Máxima verosimilitud para datos AGRUPADOS: la probabilidad de caer en
+#      el rango [a, b) es F(b) - F(a), con una Pareto truncada en 100 000 BTC
+#      (el último rango usado). La log-verosimilitud es multinomial.
+alfa_agrupado <- function(datos, xm, tope = 1e5) {
+  d <- datos[datos$rango_min_btc >= xm, ]
+  logvero <- function(a) {
+    p <- (ppareto(d$rango_max_btc, xm, a) - ppareto(d$rango_min_btc, xm, a)) /
+      ppareto(tope, xm, a)
+    sum(d$direcciones * log(p))
+  }
+  optimize(logvero, c(0.1, 5), maximum = TRUE)$maximum
+}
+alfa_real_10  <- alfa_agrupado(reales, xm = 10)
+alfa_real_100 <- alfa_agrupado(reales, xm = 100)
+cat(sprintf("\nalfa por MV agrupada (cola desde 10 BTC)  = %.3f\n", alfa_real_10))
+cat(sprintf("alfa por MV agrupada (cola desde 100 BTC) = %.3f\n", alfa_real_100))
+cat(sprintf("Kondor et al. (2014), datos de 2013: alfa = %.3f\n", alfa_btc))
+cat("Conclusión: 13 años después la cola sigue siendo Pareto con alfa cercano a 1.\n",
+    "En la punta (>= 10 000 BTC) hay menos direcciones de las que predice la recta:\n",
+    "oferta finita y casas de cambio que agrupan los BTC de miles de usuarios.\n")
+
+guardar_png("09_datos_reales_bitinfocharts.png", {
+  par(mar = c(5, 5, 4, 2))
+  x_r <- reales$rango_min_btc
+  plot(x_r, N_mayor, log = "xy", pch = 19, cex = 1.5, col = col_a["0.984"],
+       xlab = "Saldo x (BTC, escala log)", ylab = "N(x): direcciones con saldo >= x (log)",
+       main = "Datos reales BitInfoCharts (nov. 2026)")
+  curve(N_mayor[1] * (10 / x)^alfa_real_10, add = TRUE, lwd = 2, col = "red")
+  curve(N_mayor[1] * (10 / x)^alfa_btc, add = TRUE, lwd = 2, lty = 2, col = "grey30")
+  legend("topright", bty = "n", pch = c(19, NA, NA), lwd = c(NA, 2, 2),
+         lty = c(NA, 1, 2), col = c(col_a["0.984"], "red", "grey30"),
+         legend = c("Datos reales", sprintf("Pareto ajustada: alfa = %.3f", alfa_real_10),
+                    "alfa = 0.984 (Kondor et al., 2013)"))
+  grid()
+})
+
+# =============================================================================
+# 11. EFECTO MATEO (APEGO PREFERENCIAL) vs. LEY DE GIBRAT
+#     Modelo de Simon/Yule: en cada paso entra 1 BTC.
+#     - Con probabilidad p se lo lleva una dirección NUEVA.
+#     - Con probabilidad 1 - p va a una dirección existente con probabilidad
+#       PROPORCIONAL a su saldo ("los ricos se hacen más ricos").
+#     La teoría predice una cola Pareto con alfa = 1 / (1 - p): si p es
+#     pequeño, alfa queda cerca de 1, como en Bitcoin.
+#     Gibrat: el saldo se multiplica por choques aleatorios que no dependen
+#     del tamaño -> log(saldo) es suma de choques -> Log-normal.
+# =============================================================================
+linea("11. Efecto Mateo vs. Ley de Gibrat")
+
+simular_mateo <- function(pasos, p) {
+  dueno <- integer(pasos)              # dueño de cada BTC emitido
+  dueno[1] <- 1; n_dir <- 1
+  nuevos <- runif(pasos) < p
+  for (s in 2:pasos) {
+    if (nuevos[s]) {
+      n_dir <- n_dir + 1; dueno[s] <- n_dir
+    } else {
+      # escoger al azar un BTC ya emitido = escoger dirección con prob. ∝ saldo
+      dueno[s] <- dueno[sample.int(s - 1, 1)]
+    }
+  }
+  tabulate(dueno, nbins = n_dir)       # saldo final de cada dirección
+}
+p_nuevo <- 0.03
+saldos_mateo <- simular_mateo(1e6, p_nuevo)
+cola_mateo   <- saldos_mateo[saldos_mateo >= xm_btc]
+alfa_mateo   <- length(cola_mateo) / sum(log(cola_mateo / xm_btc))
+cat(sprintf("Direcciones simuladas: %d | ballenas (>= 50 BTC): %d\n",
+            length(saldos_mateo), length(cola_mateo)))
+cat(sprintf("alfa teórico = 1/(1-p) = %.3f | alfa estimado por MV en la cola = %.3f\n",
+            1 / (1 - p_nuevo), alfa_mateo))
+cat(sprintf("Gini de todas las direcciones simuladas = %.3f\n",
+            gini_muestral(as.numeric(saldos_mateo))))
+
+saldos_gibrat <- 50 * exp(colSums(matrix(rnorm(200 * 5000, 0, 0.1), nrow = 200)))
+
+guardar_png("10_mateo_vs_gibrat.png", ancho = 2200, expr = {
+  par(mfrow = c(1, 2), mar = c(5, 4.5, 4, 1))
+  cm <- sort(cola_mateo, decreasing = TRUE)
+  plot(cm, seq_along(cm) / length(cm), log = "xy", pch = 16, cex = 0.5,
+       col = col_a["0.984"], xlab = "Saldo (BTC, escala log)", ylab = "P(X >= x)",
+       main = "Efecto Mateo: cola tipo Pareto (recta)")
+  curve((xm_btc / x)^(1 / (1 - p_nuevo)), add = TRUE, col = "red", lwd = 2)
+  legend("bottomleft", bty = "n", cex = 0.85, lwd = 2, col = "red",
+         sprintf("Teórica: alfa = 1/(1-p) = %.3f", 1 / (1 - p_nuevo)))
+  cg <- sort(saldos_gibrat, decreasing = TRUE)
+  plot(cg, seq_along(cg) / length(cg), log = "xy", pch = 16, cex = 0.5,
+       col = col_a["3"], xlab = "Saldo (BTC, escala log)", ylab = "P(X >= x)",
+       main = "Ley de Gibrat: cola Log-normal (curva)")
+})
+cat("En log-log el efecto Mateo da una RECTA (ley de potencias) y Gibrat una curva\n",
+    "que cae cada vez más rápido: por eso la cola de Bitcoin es Pareto.\n")
+
+# =============================================================================
+# 12. RESUMEN FINAL
+# =============================================================================
+linea("12. Resumen de la aplicación")
 resumen <- data.frame(
   indicador = c("xm (BTC)", "alfa del artículo", "alfa por máxima verosimilitud",
                 "alfa por mínima KS", "Mediana teórica (BTC)", "Media teórica",
                 "Varianza teórica", "Gini muestral mediano (n = 100 000)",
                 "Gini del artículo (todas las direcciones)",
                 "Participación mediana del 6.28% más rico",
-                "Direcciones que concentran el 50% (mediana)"),
+                "Direcciones que concentran el 50% (mediana)",
+                "Media de la Pareto truncada en 21 millones (BTC)",
+                "alfa con datos reales BitInfoCharts 2026 (desde 10 BTC)",
+                "alfa con datos reales BitInfoCharts 2026 (desde 100 BTC)",
+                "alfa en la simulación del efecto Mateo"),
   valor = c(xm_btc, alfa_btc, round(alfa_mv, 4), alfa_ks,
             round(mediana_pareto(xm_btc, alfa_btc), 2), "Infinita (alfa <= 1)",
             "Infinita (alfa <= 2)", round(G_sim, 4), 0.985,
             sprintf("%.2f%%", 100 * top_628),
-            sprintf("%.0f (%.3f%%)", nakamoto, 100 * nakamoto / n_btc))
+            sprintf("%.0f (%.3f%%)", nakamoto, 100 * nakamoto / n_btc),
+            round(media_trunc), round(alfa_real_10, 3), round(alfa_real_100, 3),
+            round(alfa_mateo, 3))
 )
 print(resumen, row.names = FALSE)
 write.csv(resumen, "resultados/resumen_aplicacion.csv", row.names = FALSE)
